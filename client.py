@@ -1,22 +1,35 @@
+import argparse
 import sys
 import socket
-
-HOST = sys.argv[1]
-start_port= int(sys.argv[2])
-end_port= int(sys.argv[3])
-def check_port(HOST, PORT): 
+parser= argparse.ArgumentParser()
+parser.add_argument("target")
+parser.add_argument("--start", type=int)
+parser.add_argument("--end", type=int)
+args= parser.parse_args()
+HOST = args.target
+start_port= args.start
+end_port= args.end
+def check_port(target, port): 
     client_socket= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.settimeout(2)
     try:
-        client_socket.connect((HOST, PORT))
-        print(f"Port {PORT}: OPEN")
+        client_socket.connect((target, port))
+        return "OPEN"
     except ConnectionRefusedError:
-        print(f"Port {PORT}: CLOSED")
-    client_socket.close()
-if(start_port<0 or end_port<0 or start_port> end_port ):
+        return "CLOSED"
+    except TimeoutError:
+        return "TIMEOUT"
+    except ConnectionError as ce:
+        return ce
+    except OSError as e:
+       return e
+    finally:
+        client_socket.close()
+if(start_port<=0 or end_port<=0 or start_port> end_port or  start_port>= 65536 or end_port>=65536 ):
     print("Provide valid start and end port")
     sys.exit()
 for i in range(start_port, end_port+1):
-    check_port(HOST, i)
+    result = check_port(HOST, i)
     
 
 
