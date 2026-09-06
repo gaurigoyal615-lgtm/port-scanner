@@ -34,6 +34,10 @@ for i in range(start_port, end_port+1):
     result = check_port(HOST, i)
     if result== "OPEN":
         print(f"Port {i}: OPEN")
+    elif result== "CLOSED" :
+        print(f"PORT {i}: CLOSED")
+    elif result== "TIMEOUT" :
+        print(f"PORT {i}: TIMEOUT ")  
 end= time.perf_counter()
 print(f"Scan complete in {round(end-start, 3)} seconds")
 
