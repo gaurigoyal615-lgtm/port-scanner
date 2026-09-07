@@ -2,7 +2,7 @@ import argparse
 import sys
 import socket
 import time
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 parser= argparse.ArgumentParser()
 parser.add_argument("target")
 parser.add_argument("--start", type=int)
@@ -27,18 +27,21 @@ def check_port(target, port):
        return "ERROR"
     finally:
         client_socket.close()
+
 if(start_port<=0 or end_port<=0 or start_port> end_port or  start_port>= 65536 or end_port>=65536 ):
     print("Provide valid start and end port")
     sys.exit()
 start = time.perf_counter()
-for i in range(start_port, end_port+1):
-    result = check_port(HOST, i)
-    if result== "OPEN":
-        print(f"Port {i}: OPEN")
-    elif result== "CLOSED" :
-        print(f"PORT {i}: CLOSED")
-    elif result== "TIMEOUT" :
-        print(f"PORT {i}: TIMEOUT ")  
+with ThreadPoolExecutor(max_workers=10) as executor:
+    future_to_port= {}
+    for i in range(start_port, end_port+1):
+        future= executor.submit(check_port, HOST, i)
+        future_to_port[future]= i
+    for future in future_to_port:
+        result= future.result()
+        port = future_to_port[future]
+        print(f"Port {port}: {result}")
+          
 end= time.perf_counter()
 print(f"Scan complete in {round(end-start, 3)} seconds")
 
