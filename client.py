@@ -2,7 +2,7 @@ import argparse
 import sys
 import socket
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 parser= argparse.ArgumentParser()
 parser.add_argument("target")
 parser.add_argument("--start", type=int)
@@ -37,9 +37,9 @@ with ThreadPoolExecutor(max_workers=10) as executor:
     for i in range(start_port, end_port+1):
         future= executor.submit(check_port, HOST, i)
         future_to_port[future]= i
-    for future in future_to_port:
-        result= future.result()
+    for future in as_completed(future_to_port):
         port = future_to_port[future]
+        result= future.result()
         print(f"Port {port}: {result}")
           
 end= time.perf_counter()
