@@ -10,10 +10,36 @@ parser.add_argument("--end", type=int)
 parser.add_argument("--workers", type=int)
 parser.add_argument("--timeout", type=float)
 args= parser.parse_args()
-HOST = args.target
+target = args.target
 start_port= args.start
 timeout= args.timeout
 end_port= args.end
+if (
+    start_port <= 0
+    or end_port <= 0
+    or start_port > end_port
+    or start_port > 65535
+    or end_port > 65535
+    or timeout <= 0
+    or args.workers <= 0
+):
+    print("Provide valid ports, timeout, and workers")
+    sys.exit()
+def resolve_target(target):
+    start= time.perf_counter()
+    
+    try:
+        ip= socket.gethostbyname(target)
+        end= time.perf_counter()
+        
+        print(f"Resolved {target} -> {ip}")
+        print(f"DNS resolution: {round(end- start, 3)} seconds")
+        
+        return ip
+    except socket.gaierror:
+        print(f"Could not resolve: {target}")
+        sys.exit()
+HOST = resolve_target(target)
 def check_port(target, port,timeout): 
     client_socket= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
@@ -32,9 +58,7 @@ def check_port(target, port,timeout):
     finally:
         client_socket.close()
 
-if(start_port<=0 or end_port<=0 or start_port> end_port or  start_port>= 65536 or end_port>=65536 or timeout<=0 ):
-    print("Provide valid start and end port or timeout")
-    sys.exit()
+
 
 start = time.perf_counter()
 with ThreadPoolExecutor(max_workers=args.workers) as executor:
