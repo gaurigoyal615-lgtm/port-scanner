@@ -5,10 +5,10 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 parser= argparse.ArgumentParser()
 parser.add_argument("target")
-parser.add_argument("--start", type=int)
-parser.add_argument("--end", type=int)
-parser.add_argument("--workers", type=int)
-parser.add_argument("--timeout", type=float)
+parser.add_argument("--start", type=int, default=1)
+parser.add_argument("--end", type=int, default=1-24)
+parser.add_argument("--workers", type=int, default=10)
+parser.add_argument("--timeout", type=float, default=2.0)
 args= parser.parse_args()
 target = args.target
 start_port= args.start

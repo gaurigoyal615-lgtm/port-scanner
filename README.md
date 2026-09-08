@@ -80,19 +80,51 @@ Initial sequential scan on localhost:
 | 1–1,000 | 0.034 s |
 | 1–5,000 | 0.107 s |
 
-The next goal is to understand whether concurrency can significantly improve scans involving slow connections and timeouts.
+Concurrency
+The initial scanner checked ports sequentially. This becomes inefficient when connections take time to timeout.
+I introduced ThreadPoolExecutor so multiple TCP connection attempts can happen concurrently.
+Sequential:
 
-## Project Structure
+port 1 → wait → port 2 → wait → port 3 → ...
 
-```text
+Concurrent:
+
+port 1 ─┐
+port 2 ─┤
+port 3 ─┤ → running at the same time
+port 4 ─┘
+Results are collected using as_completed(), so completed scans can be reported without waiting for earlier ports to finish.
+I also experimented with different worker counts. Increasing the number of workers helps with I/O-bound scans, but using an unnecessarily large number of workers does not provide proportional speedup.
+DNS Resolution
+The scanner can accept a hostname instead of requiring an IP address.
+DNS resolution happens once before the thread pool starts:
+hostname
+   ↓
+DNS resolution
+   ↓
+IP address
+   ↓
+concurrent port scanning
+DNS resolution time is measured separately from the actual port scan.
+This keeps check_port() focused on one job: attempting a TCP connection to a specific IP address and port.
+Performance
+Initial sequential scan on localhost:
+Ports	Time
+1–100	0.004 s
+1–1,000	0.034 s
+1–5,000	0.107 s
+The main reason for introducing concurrency was not fast localhost connections, but slow connections where each port may spend time waiting for a timeout.
+Project Structure
 port_scanner/
+
 ├── client.py
 └── server.py
-```
+server.py is used as a controlled test server while developing and experimenting with the scanner.
+Next
+The next step is to investigate what happens after a TCP connection succeeds.
+Currently the scanner can tell me:
+Port 5000: OPEN
+The next question is:
+What service is actually running on that port?
+The next experiment will be to send and receive application data using the test server and investigate how banner grabbing works.
 
-## Next
-
-* Learn `ThreadPoolExecutor`
-* Build a concurrent version
-* Compare sequential vs concurrent performance
-* Improve result handling and scanner design
