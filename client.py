@@ -3,10 +3,11 @@ import sys
 import socket
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import re
 parser= argparse.ArgumentParser()
 parser.add_argument("target")
 parser.add_argument("--start", type=int, default=1)
-parser.add_argument("--end", type=int, default=1-24)
+parser.add_argument("--end", type=int, default=1024)
 parser.add_argument("--workers", type=int, default=10)
 parser.add_argument("--timeout", type=float, default=2.0)
 args= parser.parse_args()
@@ -25,6 +26,7 @@ if (
 ):
     print("Provide valid ports, timeout, and workers")
     sys.exit()
+
 def resolve_target(target):
     start= time.perf_counter()
     
@@ -46,9 +48,13 @@ def check_port(target, port,timeout):
     client_socket.settimeout(timeout)
     try:
         client_socket.connect((target, port))
-        data = client_socket.recv(1024)
-        banner= data.decode()
-        return ("OPEN", banner)
+        probe = b"HEAD / HTTP/1.0\r\n\n"
+        response= send_probe(client_socket, probe)
+        try:
+            data = client_socket.recv(1024)
+        except socket.timeout():
+            data = b" "   
+        return ("OPEN", response)
     except ConnectionRefusedError:
         return "CLOSED"
     except TimeoutError:
@@ -60,6 +66,13 @@ def check_port(target, port,timeout):
     finally:
         client_socket.close()
 
+def send_probe(client_socket, probe):
+    client_socket.send(probe)
+    
+    try:
+        return client_socket.recv(1024)
+    except socket.timeout:
+        return b""
 
 
 start = time.perf_counter()
