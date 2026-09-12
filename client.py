@@ -46,7 +46,9 @@ def check_port(target, port,timeout):
     client_socket.settimeout(timeout)
     try:
         client_socket.connect((target, port))
-        return "OPEN"
+        data = client_socket.recv(1024)
+        banner= data.decode()
+        return ("OPEN", banner)
     except ConnectionRefusedError:
         return "CLOSED"
     except TimeoutError:
@@ -69,7 +71,10 @@ with ThreadPoolExecutor(max_workers=args.workers) as executor:
     for future in as_completed(future_to_port):
         port = future_to_port[future]
         result= future.result()
-        print(f"Port {port}: {result}")
+        if isinstance(result, tuple):
+            print(f"Port {port}: {result[0]}: {result[1]}")
+        else:
+            print(f"Port {port}: {result} ")
           
 end= time.perf_counter()
 print(f"Scan complete in {round(end-start, 3)} seconds")
