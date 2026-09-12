@@ -42,19 +42,23 @@ def resolve_target(target):
         print(f"Could not resolve: {target}")
         sys.exit()
 HOST = resolve_target(target)
+PROBES= [
+        b"HEAD / HTTP/1.0\r\n\r\n"
+    ]
 def check_port(target, port,timeout): 
+    
     client_socket= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
     client_socket.settimeout(timeout)
     try:
         client_socket.connect((target, port))
-        probe = b"HEAD / HTTP/1.0\r\n\n"
-        response= send_probe(client_socket, probe)
-        try:
-            data = client_socket.recv(1024)
-        except socket.timeout():
-            data = b" "   
-        return ("OPEN", response)
+        for probe in PROBES:
+            response= send_probe(client_socket, probe)
+            if response:
+                return("OPEN", response)
+            
+        return("OPEN", b"")
+        
     except ConnectionRefusedError:
         return "CLOSED"
     except TimeoutError:
